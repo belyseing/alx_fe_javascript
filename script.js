@@ -13,6 +13,7 @@ window.onload = function () {
   populateCategoryFilter();
   loadLastSelectedCategory();
   filterQuotes();
+  startDataSync();
 };
 
 // Show random quote from the array
@@ -36,6 +37,7 @@ function createAddQuoteForm() {
   saveQuotes();
   populateCategoryFilter();
   filterQuotes();
+  postQuoteToServer(newQuote); // Sync new quote to server
 }
 
 // Save quotes to local storage
@@ -123,4 +125,58 @@ function importFromJsonFile(event) {
     filterQuotes();
   };
   fileReader.readAsText(event.target.files[0]);
+}
+
+// Simulate fetching quotes from the server
+function fetchQuotesFromServer() {
+  return fetch("https://jsonplaceholder.typicode.com/posts")
+    .then((response) => response.json())
+    .then((data) =>
+      data.map((item) => ({ category: "server", text: item.title }))
+    );
+}
+
+// Simulate posting a new quote to the server
+function postQuoteToServer(quote) {
+  return fetch("https://jsonplaceholder.typicode.com/posts", {
+    method: "POST",
+    body: JSON.stringify(quote),
+    headers: {
+      "Content-type": "application/json; charset=UTF-8",
+    },
+  })
+    .then((response) => response.json())
+    .then((data) => console.log("Quote posted:", data));
+}
+
+// Periodically sync data with the server
+function startDataSync() {
+  setInterval(syncDataWithServer, 60000); // Sync every 60 seconds
+}
+
+function syncDataWithServer() {
+  fetchQuotesFromServer().then((serverQuotes) => {
+    let localQuotes = JSON.parse(localStorage.getItem("quotesArray")) || [];
+    let updated = false;
+
+    serverQuotes.forEach((serverQuote) => {
+      if (
+        !localQuotes.some((localQuote) => localQuote.text === serverQuote.text)
+      ) {
+        localQuotes.push(serverQuote);
+        updated = true;
+      }
+    });
+
+    if (updated) {
+      localStorage.setItem("quotesArray", JSON.stringify(localQuotes));
+      quotesArray = localQuotes;
+      populateCategoryFilter();
+      filterQuotes();
+      document.getElementById("notification").style.display = "block";
+      setTimeout(() => {
+        document.getElementById("notification").style.display = "none";
+      }, 5000);
+    }
+  });
 }

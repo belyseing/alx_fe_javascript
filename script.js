@@ -7,33 +7,68 @@ let quotesArray = [
   { category: "family", text: "No family no life" },
 ];
 
-// Call the function after the page has loaded
+// Load quotes from local storage if available
 window.onload = function () {
+  loadQuotes();
   showRandomQuote();
 };
 
-//Show random quote from the array
+// Show random quote from the array
 function showRandomQuote() {
-  // Get a random index
   let randomIndex = Math.floor(Math.random() * quotesArray.length);
-
-  // Get the quote at the random index
   let randomQuote = quotesArray[randomIndex].text;
   document.getElementById("quoteDisplay").innerHTML = randomQuote;
+
+  // Save last viewed quote to session storage
+  sessionStorage.setItem("lastViewedQuote", randomQuote);
 }
 
 // Function to get input values and add a new quote
 function createAddQuoteForm() {
-  // Get the input values
   let newQuoteText = document.getElementById("newQuoteText").value;
   let newQuoteCategory = document.getElementById("newQuoteCategory").value;
-  // Create a new quote object
   let newQuote = { category: newQuoteCategory, text: newQuoteText };
-  // Add the new quote to the quotes array
   quotesArray.push(newQuote);
-  // Clear the input fields
   document.getElementById("newQuoteText").value = "";
   document.getElementById("newQuoteCategory").value = "";
-  // Optionally, display the new random quote
-  console.log(quotesArray)
+  saveQuotes();
+}
+
+// Save quotes to local storage
+function saveQuotes() {
+  localStorage.setItem("quotesArray", JSON.stringify(quotesArray));
+}
+
+// Load quotes from local storage
+function loadQuotes() {
+  let storedQuotes = localStorage.getItem("quotesArray");
+  if (storedQuotes) {
+    quotesArray = JSON.parse(storedQuotes);
+  }
+}
+
+// Export quotes to JSON file
+function exportToJsonFile() {
+  let dataStr = JSON.stringify(quotesArray);
+  let dataUri =
+    "data:application/json;charset=utf-8," + encodeURIComponent(dataStr);
+  let exportFileDefaultName = "quotes.json";
+
+  let linkElement = document.createElement("a");
+  linkElement.setAttribute("href", dataUri);
+  linkElement.setAttribute("download", exportFileDefaultName);
+  linkElement.click();
+}
+
+// Import quotes from JSON file
+function importFromJsonFile(event) {
+  const fileReader = new FileReader();
+  fileReader.onload = function (event) {
+    const importedQuotes = JSON.parse(event.target.result);
+    quotesArray.push(...importedQuotes);
+    saveQuotes();
+    alert("Quotes imported successfully!");
+    showRandomQuote(); // Update the display
+  };
+  fileReader.readAsText(event.target.files[0]);
 }
